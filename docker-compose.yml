@@ -1,0 +1,32 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: pf4erp-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - pf4erp-mongo-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: pf4erp
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  mongo-express:
+    image: mongo-express:1.0.2-20
+    container_name: pf4erp-mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  pf4erp-mongo-data:

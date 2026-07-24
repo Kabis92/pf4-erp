@@ -1,0 +1,15 @@
+target/
+plugins/*.jar
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.DS_Store
+node_modules/
+dist/
+*.log
+.env
+.env.local
+erp-ui/dist/
+plugin-rh/ui/node_modules/

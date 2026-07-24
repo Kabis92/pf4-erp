@@ -1,0 +1,1 @@
+{"root":["./src/index.tsx","./src/vite-env.d.ts","./src/api/employes.ts","./src/components/confirmdialog.tsx","./src/components/employecountwidget.tsx","./src/components/employeformdialog.tsx","./src/views/employelistpage.tsx"],"version":"5.7.3"}

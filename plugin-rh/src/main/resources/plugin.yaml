@@ -1,0 +1,21 @@
+id: rh
+version: 0.1.0-SNAPSHOT
+displayName: Ressources Humaines
+description: Gestion des employés
+requires: ">=0.1.0"
+ui:
+  entrypoint: ui/main.js
+  style: ui/style.css
+  slots:
+    - dashboard.widgets
+    - menu.main
+api:
+  docs: true
+  group: rh
+  paths:
+    - /api/rh/**
+permissions:
+  - code: rh.employe.read
+    label: Consulter les employés
+  - code: rh.employe.write
+    label: Créer / modifier / supprimer un employé

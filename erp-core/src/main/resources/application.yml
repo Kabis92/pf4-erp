@@ -1,0 +1,36 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: erp-core
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/pf4erp}
+      auto-index-creation: true
+  servlet:
+    multipart:
+      max-file-size: 64MB
+      max-request-size: 64MB
+
+pf4erp:
+  jwt:
+    secret: ${JWT_SECRET:pf4erp-dev-secret-change-me-32chars!!}
+    expiration-seconds: 86400
+  plugin:
+    runtime-mode: ${PLUGIN_RUNTIME_MODE:development}
+    plugins-dir: ${PLUGINS_DIR:./plugins}
+    fixed-plugin-path:
+      - ${PLUGIN_RH_PATH:./plugin-rh/target/classes}
+
+logging:
+  level:
+    com.pf4erp: INFO
+    org.pf4j: INFO
+
+springdoc:
+  swagger-ui:
+    try-it-out-enabled: true
+    urls-primary-name: core
+  cache:
+    disabled: true
