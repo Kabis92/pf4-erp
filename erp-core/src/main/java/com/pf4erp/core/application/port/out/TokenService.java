@@ -5,11 +5,12 @@ import java.util.Set;
 
 public interface TokenService {
 
-    String issueToken(String username, Set<String> roles, Set<String> permissions);
+    String issueToken(String userId, String username, Set<String> roles, Set<String> permissions);
 
     TokenClaims parse(String token);
 
     record TokenClaims(
+            String userId,
             String username,
             Set<String> roles,
             Set<String> permissions,

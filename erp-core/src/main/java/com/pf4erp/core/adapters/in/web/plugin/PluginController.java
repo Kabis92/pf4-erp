@@ -55,7 +55,8 @@ public class PluginController {
 
         MediaType mediaType = resolveMediaType(relativePath);
         return ResponseEntity.ok()
-                .header(HttpHeaders.CACHE_CONTROL, "no-cache")
+                .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0")
+                .header(HttpHeaders.PRAGMA, "no-cache")
                 .contentType(mediaType)
                 .body(new InputStreamResource(stream));
     }
@@ -112,6 +113,7 @@ public class PluginController {
                     d.getApiDocsGroup(),
                     d.getApiDocsUrl(),
                     "/api/plugins/" + d.getId() + "/assets/" + d.getUiEntrypoint()
+                            + "?v=" + d.getVersion()
             );
         }
     }

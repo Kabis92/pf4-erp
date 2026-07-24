@@ -27,4 +27,9 @@ public class RhPluginConfiguration {
     public EmployeController employeController(EmployeUseCase employeUseCase) {
         return new EmployeController(employeUseCase);
     }
+
+    @Bean
+    public RhDemoDataSeeder rhDemoDataSeeder(MongoTemplate mongoTemplate) {
+        return new RhDemoDataSeeder(mongoTemplate);
+    }
 }

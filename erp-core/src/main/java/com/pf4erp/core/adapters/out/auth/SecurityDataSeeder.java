@@ -51,9 +51,20 @@ public class SecurityDataSeeder implements ApplicationRunner {
         ensureRole(
                 CorePermissions.ROLE_USER,
                 "Utilisateur",
-                "Accès lecture RH de base",
-                Set.of("rh.employe.read"),
+                "Accès lecture RH + mes tâches todo",
+                Set.of("rh.employe.read", "todo.task.self"),
                 true
+        );
+        ensureRole(
+                "TASK_MANAGER",
+                "Manager tâches",
+                "Gérer projets / tâches todo et assigner aux employés",
+                Set.of(
+                        "rh.employe.read",
+                        "todo.task.self",
+                        "todo.project.manage"
+                ),
+                false
         );
 
         ensureUser("admin", "Admin ERP", "admin", Set.of(CorePermissions.ROLE_ADMIN));
@@ -64,9 +75,18 @@ public class SecurityDataSeeder implements ApplicationRunner {
     private void ensureRole(String code, String label, String description, Set<String> permissions, boolean system) {
         roleRepository.findByCode(code).ifPresentOrElse(
                 existing -> {
-                    // Keep admin empty; refresh USER default perms if empty
-                    if (CorePermissions.ROLE_USER.equals(code) && existing.getPermissionCodes().isEmpty()) {
-                        roleRepository.save(existing.withPermissionCodes(permissions));
+                    if (CorePermissions.ROLE_ADMIN.equals(code)) {
+                        return;
+                    }
+                    java.util.LinkedHashSet<String> merged = new java.util.LinkedHashSet<>(existing.getPermissionCodes());
+                    boolean changed = false;
+                    for (String permission : permissions) {
+                        if (merged.add(permission)) {
+                            changed = true;
+                        }
+                    }
+                    if (changed) {
+                        roleRepository.save(existing.withPermissionCodes(merged));
                     }
                 },
                 () -> roleRepository.save(new Role(

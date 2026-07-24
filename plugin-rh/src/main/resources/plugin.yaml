@@ -1,5 +1,5 @@
 id: rh
-version: 0.1.0-SNAPSHOT
+version: 0.1.1-SNAPSHOT
 displayName: Ressources Humaines
 description: Gestion des employés
 requires: ">=0.1.0"

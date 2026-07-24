@@ -13,8 +13,10 @@ export type ExtensionContribution = {
 export type MenuContribution = {
   id: string;
   label: string;
-  path: string;
+  path?: string;
   icon?: string;
+  permission?: string;
+  children?: MenuContribution[];
 };
 
 export type PluginRuntimeApi = {
@@ -22,6 +24,7 @@ export type PluginRuntimeApi = {
   registerMenu: (item: MenuContribution) => void;
   registerRoute: (path: string, component: ComponentType) => void;
   getAuthToken: () => string | null;
+  getPermissions?: () => string[];
   apiBaseUrl: string;
 };
 
@@ -39,11 +42,13 @@ export function activate(api: PluginRuntimeApi = window.__PF4ERP__!) {
 
   api.registerRoute('/rh/employes', EmployeListPage);
 
+  // Menu simple (sans sous-menus) — visible si rh.employe.read
   api.registerMenu({
     id: 'rh.employes',
     label: 'Employés',
     path: '/rh/employes',
     icon: 'users',
+    permission: 'rh.employe.read',
   });
 
   api.registerExtension('dashboard.widgets', {

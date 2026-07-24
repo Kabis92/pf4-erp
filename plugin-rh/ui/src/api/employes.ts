@@ -4,6 +4,7 @@ export type Employe = {
   email: string;
   poste: string;
   dateEmbauche: string;
+  userId: string | null;
 };
 
 export type EmployeInput = {
@@ -11,6 +12,13 @@ export type EmployeInput = {
   email: string;
   poste: string;
   dateEmbauche: string;
+  userId: string | null;
+};
+
+export type UserOption = {
+  id: string;
+  username: string;
+  displayName: string;
 };
 
 function getApi() {
@@ -55,6 +63,10 @@ export function listEmployes() {
 
 export function countEmployes() {
   return request<{ count: number }>('/api/rh/employes/count');
+}
+
+export function listDirectoryUsers() {
+  return request<UserOption[]>('/api/directory/users');
 }
 
 export function createEmploye(input: EmployeInput) {

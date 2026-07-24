@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useId, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
-import type { Employe, EmployeInput } from '../api/employes';
+import { listDirectoryUsers, type Employe, type EmployeInput, type UserOption } from '../api/employes';
 
 type Mode = 'create' | 'edit';
 
@@ -17,11 +17,13 @@ const empty: EmployeInput = {
   email: '',
   poste: '',
   dateEmbauche: new Date().toISOString().slice(0, 10),
+  userId: null,
 };
 
 export function EmployeFormDialog({ open, mode, initial, onClose, onSubmit }: Props) {
   const titleId = useId();
   const [form, setForm] = useState<EmployeInput>(empty);
+  const [users, setUsers] = useState<UserOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,12 +33,16 @@ export function EmployeFormDialog({ open, mode, initial, onClose, onSubmit }: Pr
     }
     setError(null);
     setSaving(false);
+    void listDirectoryUsers()
+      .then(setUsers)
+      .catch(() => setUsers([]));
     if (mode === 'edit' && initial) {
       setForm({
         nom: initial.nom,
         email: initial.email,
         poste: initial.poste,
         dateEmbauche: initial.dateEmbauche,
+        userId: initial.userId,
       });
     } else {
       setForm(empty);
@@ -57,6 +63,7 @@ export function EmployeFormDialog({ open, mode, initial, onClose, onSubmit }: Pr
         email: form.email.trim(),
         poste: form.poste.trim(),
         dateEmbauche: form.dateEmbauche,
+        userId: form.userId || null,
       });
       onClose();
     } catch (err) {
@@ -78,28 +85,30 @@ export function EmployeFormDialog({ open, mode, initial, onClose, onSubmit }: Pr
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative z-10 w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg"
+        className="relative z-10 flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg"
       >
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <h2 id={titleId} className="text-base font-semibold">
-              {mode === 'create' ? 'Nouvel employé' : 'Modifier l’employé'}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {mode === 'create' ? 'Renseignez les informations du collaborateur.' : 'Mettez à jour la fiche.'}
-            </p>
+        <div className="mb-0 shrink-0 border-b border-border p-5 pb-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 id={titleId} className="text-base font-semibold">
+                {mode === 'create' ? 'Nouvel employé' : 'Modifier l’employé'}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Liez un compte pour les tâches Todo.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex size-8 items-center justify-center rounded-md hover:bg-accent"
+              aria-label="Fermer"
+            >
+              <X className="size-4" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex size-8 items-center justify-center rounded-md hover:bg-accent"
-            aria-label="Fermer"
-          >
-            <X className="size-4" />
-          </button>
         </div>
 
-        <form className="space-y-3" onSubmit={(e) => void handleSubmit(e)}>
+        <form className="space-y-3 overflow-y-auto p-5" onSubmit={(e) => void handleSubmit(e)}>
           <Field label="Nom">
             <input
               required
@@ -109,6 +118,25 @@ export function EmployeFormDialog({ open, mode, initial, onClose, onSubmit }: Pr
               placeholder="Ada Lovelace"
               autoFocus
             />
+          </Field>
+          <Field label="Compte utilisateur (lien login)">
+            <select
+              value={form.userId ?? ''}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, userId: e.target.value ? e.target.value : null }))
+              }
+              className={inputClass}
+            >
+              <option value="">— Aucun —</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.displayName} (@{u.username})
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Nécessaire pour assigner des tâches Todo à cet employé.
+            </p>
           </Field>
           <Field label="Email">
             <input

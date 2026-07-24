@@ -1,6 +1,7 @@
 package com.pf4erp.rh.adapters.out.persistence.mongo;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDate;
@@ -14,6 +15,9 @@ public class EmployeDocument {
     private String email;
     private String poste;
     private LocalDate dateEmbauche;
+
+    @Indexed(unique = true, sparse = true)
+    private String userId;
 
     public String getId() {
         return id;
@@ -53,5 +57,13 @@ public class EmployeDocument {
 
     public void setDateEmbauche(LocalDate dateEmbauche) {
         this.dateEmbauche = dateEmbauche;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 }

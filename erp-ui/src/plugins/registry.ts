@@ -7,11 +7,16 @@ export type ExtensionContribution = {
   props?: Record<string, unknown>;
 };
 
+/** Entrée de menu plugin : feuille (path) ou groupe (children). */
 export type MenuContribution = {
   id: string;
   label: string;
-  path: string;
+  /** Requis pour une feuille ; omis pour un groupe avec children. */
+  path?: string;
   icon?: string;
+  /** Si défini, visible seulement si l’utilisateur a cette permission (ou ADMIN). */
+  permission?: string;
+  children?: MenuContribution[];
 };
 
 export type PluginDefinition = {
@@ -74,7 +79,10 @@ class PluginRegistry {
       const label = String(contribution.props.label ?? contribution.id);
       const path = String(contribution.props.path ?? '/');
       const icon = contribution.props.icon ? String(contribution.props.icon) : undefined;
-      this.registerMenu({ id: contribution.id, label, path, icon });
+      const permission = contribution.props.permission
+        ? String(contribution.props.permission)
+        : undefined;
+      this.registerMenu({ id: contribution.id, label, path, icon, permission });
       return;
     }
     this.notify();
@@ -82,6 +90,14 @@ class PluginRegistry {
 
   registerMenu(item: MenuContribution) {
     this.menus = [...this.menus.filter((m) => m.id !== item.id), item];
+    this.notify();
+  }
+
+  /** Remet à zéro menus/routes/extensions avant un (re)chargement de plugins. */
+  clear() {
+    this.extensions = new Map();
+    this.menus = [];
+    this.routes = new Map();
     this.notify();
   }
 
@@ -100,3 +116,33 @@ class PluginRegistry {
 }
 
 export const pluginRegistry = new PluginRegistry();
+
+/** Filtre récursif des menus selon les permissions de l’utilisateur connecté. */
+export function filterMenusByPermission(
+  menus: MenuContribution[],
+  permissions: string[],
+  isAdmin: boolean,
+): MenuContribution[] {
+  const can = (permission?: string) =>
+    !permission || isAdmin || permissions.includes(permission);
+
+  return menus
+    .map((item) => {
+      if (item.children && item.children.length > 0) {
+        const children = filterMenusByPermission(item.children, permissions, isAdmin);
+        if (children.length === 0) {
+          return null;
+        }
+        // Groupe visible si au moins un enfant l’est (et si le groupe a une permission, elle doit passer)
+        if (!can(item.permission)) {
+          return null;
+        }
+        return { ...item, children };
+      }
+      if (!item.path || !can(item.permission)) {
+        return null;
+      }
+      return item;
+    })
+    .filter((item): item is MenuContribution => item != null);
+}

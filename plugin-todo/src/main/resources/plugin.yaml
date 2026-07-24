@@ -1,0 +1,20 @@
+id: todo
+version: 0.1.0-SNAPSHOT
+displayName: Todo
+description: Projets et tâches assignées aux employés
+requires: ">=0.1.0"
+ui:
+  entrypoint: ui/main.js
+  style: ui/style.css
+  slots:
+    - menu.main
+api:
+  docs: true
+  group: todo
+  paths:
+    - /api/todo/**
+permissions:
+  - code: todo.task.self
+    label: Consulter et mettre à jour mes tâches
+  - code: todo.project.manage
+    label: Gérer projets et assigner des tâches

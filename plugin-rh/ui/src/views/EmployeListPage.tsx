@@ -28,7 +28,7 @@ function initials(name: string) {
 }
 
 const ROW_COLS =
-  'grid grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_88px] items-center gap-4 px-5';
+  'grid grid-cols-[minmax(0,1.8fr)_minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_88px] items-center gap-3 px-5';
 
 type FormState =
   | { open: false }
@@ -152,6 +152,7 @@ export function EmployeListPage() {
           </button>
           <span>Email</span>
           <span>Poste</span>
+          <span>Compte</span>
           <span>Embauche</span>
           <span className="text-right">Actions</span>
         </div>
@@ -202,6 +203,9 @@ export function EmployeListPage() {
                 <p className="truncate text-sm text-muted-foreground">{employe.email}</p>
                 <span className="inline-flex w-fit rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
                   {employe.poste}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {employe.userId ? 'Lié' : '—'}
                 </span>
                 <p className="text-sm text-muted-foreground">{employe.dateEmbauche}</p>
                 <div className="flex items-center justify-end gap-1">

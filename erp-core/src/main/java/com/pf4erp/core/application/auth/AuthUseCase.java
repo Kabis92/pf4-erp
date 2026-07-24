@@ -54,7 +54,12 @@ public class AuthUseCase {
         }
 
         Set<String> permissions = resolvePermissions(user);
-        String token = tokenService.issueToken(user.getUsername(), user.getRoleCodes(), permissions);
+        String token = tokenService.issueToken(
+                user.getId(),
+                user.getUsername(),
+                user.getRoleCodes(),
+                permissions
+        );
         return new AuthResult(token, toUserInfo(user, permissions));
     }
 

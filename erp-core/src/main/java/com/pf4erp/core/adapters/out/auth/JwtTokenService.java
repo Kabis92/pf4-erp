@@ -34,11 +34,12 @@ public class JwtTokenService implements TokenService {
     }
 
     @Override
-    public String issueToken(String username, Set<String> roles, Set<String> permissions) {
+    public String issueToken(String userId, String username, Set<String> roles, Set<String> permissions) {
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(expirationSeconds);
         return Jwts.builder()
                 .subject(username)
+                .claim("uid", userId)
                 .claim("roles", List.copyOf(roles))
                 .claim("permissions", List.copyOf(permissions))
                 .issuedAt(Date.from(now))
@@ -55,7 +56,9 @@ public class JwtTokenService implements TokenService {
                 .parseSignedClaims(token)
                 .getPayload();
 
+        String userId = claims.get("uid", String.class);
         return new TokenClaims(
+                userId != null ? userId : "",
                 claims.getSubject(),
                 toStringSet(claims.get("roles")),
                 toStringSet(claims.get("permissions")),

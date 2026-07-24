@@ -10,6 +10,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/rh/employes")
@@ -47,6 +50,18 @@ public class EmployeController {
         return new CountDto(employeUseCase.count());
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public EmployeDto me() {
+        String userId = currentUserId();
+        return employeUseCase.findByUserId(userId)
+                .map(this::toDto)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Aucun employé lié à votre compte"
+                ));
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('rh.employe.read')")
     public EmployeDto get(@PathVariable String id) {
@@ -61,12 +76,17 @@ public class EmployeController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAuthority('rh.employe.write')")
     public EmployeDto create(@Valid @RequestBody EmployeRequest request) {
-        return toDto(employeUseCase.create(
-                request.nom(),
-                request.email(),
-                request.poste(),
-                request.dateEmbauche()
-        ));
+        try {
+            return toDto(employeUseCase.create(
+                    request.nom(),
+                    request.email(),
+                    request.poste(),
+                    request.dateEmbauche(),
+                    request.userId()
+            ));
+        } catch (EmployeUseCase.UserAlreadyLinkedException ex) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
@@ -78,10 +98,13 @@ public class EmployeController {
                     request.nom(),
                     request.email(),
                     request.poste(),
-                    request.dateEmbauche()
+                    request.dateEmbauche(),
+                    request.userId()
             ));
         } catch (EmployeUseCase.EmployeNotFoundException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+        } catch (EmployeUseCase.UserAlreadyLinkedException ex) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage());
         }
     }
 
@@ -96,13 +119,29 @@ public class EmployeController {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private String currentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getDetails() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session invalide");
+        }
+        if (authentication.getDetails() instanceof Map<?, ?> map) {
+            Object userId = map.get("userId");
+            if (userId != null && !userId.toString().isBlank()) {
+                return userId.toString();
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "userId absent du jeton");
+    }
+
     private EmployeDto toDto(Employe employe) {
         return new EmployeDto(
                 employe.getId().getValue(),
                 employe.getNom(),
                 employe.getEmail(),
                 employe.getPoste(),
-                employe.getDateEmbauche()
+                employe.getDateEmbauche(),
+                employe.getUserId()
         );
     }
 
@@ -110,7 +149,8 @@ public class EmployeController {
             @NotBlank String nom,
             @NotBlank @Email String email,
             @NotBlank String poste,
-            @NotNull LocalDate dateEmbauche
+            @NotNull LocalDate dateEmbauche,
+            String userId
     ) {
     }
 
@@ -119,7 +159,8 @@ public class EmployeController {
             String nom,
             String email,
             String poste,
-            LocalDate dateEmbauche
+            LocalDate dateEmbauche,
+            String userId
     ) {
     }
 

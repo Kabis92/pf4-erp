@@ -20,8 +20,11 @@ pf4erp:
   plugin:
     runtime-mode: ${PLUGIN_RUNTIME_MODE:development}
     plugins-dir: ${PLUGINS_DIR:./plugins}
+    # Chemins vers les sorties Maven explosées (plugin.properties + classes).
+    # Le classloader dev (Pf4jConfig) ajoute ce répertoire tel quel au classpath.
     fixed-plugin-path:
       - ${PLUGIN_RH_PATH:./plugin-rh/target/classes}
+      - ${PLUGIN_TODO_PATH:./plugin-todo/target/classes}
 
 logging:
   level:

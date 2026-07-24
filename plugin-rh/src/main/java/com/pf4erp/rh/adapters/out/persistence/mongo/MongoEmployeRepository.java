@@ -25,6 +25,12 @@ public class MongoEmployeRepository implements EmployeRepository {
     }
 
     @Override
+    public Optional<Employe> findByUserId(String userId) {
+        Query query = Query.query(Criteria.where("userId").is(userId));
+        return Optional.ofNullable(mongoTemplate.findOne(query, EmployeDocument.class)).map(this::toDomain);
+    }
+
+    @Override
     public List<Employe> findAll() {
         return mongoTemplate.findAll(EmployeDocument.class).stream()
                 .map(this::toDomain)
@@ -49,13 +55,23 @@ public class MongoEmployeRepository implements EmployeRepository {
         return mongoTemplate.count(new Query(), EmployeDocument.class);
     }
 
+    @Override
+    public boolean existsByUserId(String userId, EmployeId excludingId) {
+        Criteria criteria = Criteria.where("userId").is(userId);
+        if (excludingId != null) {
+            criteria = criteria.and("_id").ne(excludingId.getValue());
+        }
+        return mongoTemplate.exists(Query.query(criteria), EmployeDocument.class);
+    }
+
     private Employe toDomain(EmployeDocument doc) {
         return new Employe(
                 EmployeId.of(doc.getId()),
                 doc.getNom(),
                 doc.getEmail(),
                 doc.getPoste(),
-                doc.getDateEmbauche()
+                doc.getDateEmbauche(),
+                doc.getUserId()
         );
     }
 
@@ -66,6 +82,7 @@ public class MongoEmployeRepository implements EmployeRepository {
         doc.setEmail(employe.getEmail());
         doc.setPoste(employe.getPoste());
         doc.setDateEmbauche(employe.getDateEmbauche());
+        doc.setUserId(employe.getUserId());
         return doc;
     }
 }

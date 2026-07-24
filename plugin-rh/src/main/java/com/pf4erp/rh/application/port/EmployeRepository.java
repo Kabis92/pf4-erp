@@ -10,6 +10,8 @@ public interface EmployeRepository {
 
     Optional<Employe> findById(EmployeId id);
 
+    Optional<Employe> findByUserId(String userId);
+
     List<Employe> findAll();
 
     Employe save(Employe employe);
@@ -17,4 +19,6 @@ public interface EmployeRepository {
     void delete(EmployeId id);
 
     long count();
+
+    boolean existsByUserId(String userId, EmployeId excludingId);
 }

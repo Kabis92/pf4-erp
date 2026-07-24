@@ -87,9 +87,10 @@ Variables utiles :
 ### Compte démo (seed Mongo)
 
 - `admin` / `admin` — rôle **ADMIN** (toutes les permissions actives du catalogue)
-- `user` / `user` — rôle **USER** (`rh.employe.read`)
+- `user` / `user` — rôle **USER** (`rh.employe.read`, `todo.task.self`) ; seed RH lie ce compte à un employé
 
-Admin : menus **Utilisateurs**, **Rôles & accès**, **Plugins**.  
+Admin : menus **Utilisateurs**, **Rôles & accès**, **Plugins**, **Gestion Todo**.  
+Rôle seed **TASK_MANAGER** : manage projets/tâches + lecture employés.  
 Les plugins déclarent leurs permissions dans `plugin.yaml` ; elles sont assignables aux rôles.  
 Swagger : `/swagger-ui.html` — groupes `core` / `all` + **un groupe par plugin**.
 
@@ -104,8 +105,9 @@ Swagger : `/swagger-ui.html` — groupes `core` / `all` + **un groupe par plugin
 ```
 pf4-erp/
 ├── erp-plugin-api/    # Contrats partagés (ErpModuleExtension)
-├── erp-core/          # Shell Spring + PF4J + auth JWT
-├── plugin-rh/         # Module RH (Java hexagone + ui/ + plugin.yaml)
+├── erp-core/          # Shell Spring + PF4J + auth JWT + RBAC
+├── plugin-rh/         # Module RH (employés + lien userId)
+├── plugin-todo/       # Module Todo (projets / tâches assignées)
 ├── erp-ui/            # Shell React shadcn (PluginLoader, ExtensionSlot)
 ├── plugins/           # JARs runtime (deployment)
 └── docs/
@@ -121,4 +123,4 @@ pf4-erp/
 
 ## Statut
 
-MVP code en place : Core + plugin RH + shell React. Itérer sur le flux bout-en-bout avant d’ajouter un second plugin ou Postgres.
+MVP code en place : Core + plugins RH / Todo + shell React + RBAC.

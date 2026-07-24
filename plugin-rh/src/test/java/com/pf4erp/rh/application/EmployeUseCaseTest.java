@@ -27,7 +27,9 @@ class EmployeUseCaseTest {
 
     @Test
     void createAndList() {
-        Employe created = useCase.create("Ada Lovelace", "ada@example.com", "Ingénieure", LocalDate.of(2024, 1, 15));
+        Employe created = useCase.create(
+                "Ada Lovelace", "ada@example.com", "Ingénieure", LocalDate.of(2024, 1, 15), null
+        );
         assertEquals(1, useCase.list().size());
         assertEquals("Ada Lovelace", useCase.get(created.getId()).getNom());
         assertEquals(1, useCase.count());
@@ -35,9 +37,12 @@ class EmployeUseCaseTest {
 
     @Test
     void update() {
-        Employe created = useCase.create("Ada", "ada@example.com", "Dev", LocalDate.of(2024, 1, 1));
-        Employe updated = useCase.update(created.getId(), "Ada L.", "ada@example.com", "Lead", LocalDate.of(2024, 1, 1));
+        Employe created = useCase.create("Ada", "ada@example.com", "Dev", LocalDate.of(2024, 1, 1), "u1");
+        Employe updated = useCase.update(
+                created.getId(), "Ada L.", "ada@example.com", "Lead", LocalDate.of(2024, 1, 1), "u1"
+        );
         assertEquals("Lead", updated.getPoste());
+        assertEquals("u1", updated.getUserId());
     }
 
     @Test
@@ -46,12 +51,26 @@ class EmployeUseCaseTest {
                 () -> useCase.get(EmployeId.of("missing")));
     }
 
+    @Test
+    void rejectDuplicateUserLink() {
+        useCase.create("Ada", "ada@example.com", "Dev", LocalDate.of(2024, 1, 1), "u1");
+        assertThrows(EmployeUseCase.UserAlreadyLinkedException.class,
+                () -> useCase.create("Bob", "bob@example.com", "Dev", LocalDate.of(2024, 1, 1), "u1"));
+    }
+
     static class FakeEmployeRepository implements EmployeRepository {
         private final Map<String, Employe> store = new ConcurrentHashMap<>();
 
         @Override
         public Optional<Employe> findById(EmployeId id) {
             return Optional.ofNullable(store.get(id.getValue()));
+        }
+
+        @Override
+        public Optional<Employe> findByUserId(String userId) {
+            return store.values().stream()
+                    .filter(e -> userId.equals(e.getUserId()))
+                    .findFirst();
         }
 
         @Override
@@ -73,6 +92,13 @@ class EmployeUseCaseTest {
         @Override
         public long count() {
             return store.size();
+        }
+
+        @Override
+        public boolean existsByUserId(String userId, EmployeId excludingId) {
+            return store.values().stream()
+                    .anyMatch(e -> userId.equals(e.getUserId())
+                            && (excludingId == null || !e.getId().equals(excludingId)));
         }
     }
 }

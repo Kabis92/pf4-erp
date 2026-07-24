@@ -2,6 +2,7 @@
 
 /* Classes utilisées dans les UI plugins (bundles IIFE sans Tailwind) */
 @source "../../plugin-rh/ui/src";
+@source "../../plugin-todo/ui/src";
 
 @custom-variant dark (&:is(.dark *));
 

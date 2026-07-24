@@ -77,13 +77,13 @@ public class Pf4jPluginRegistry implements PluginRegistryPort, ApplicationListen
 
     private void bootstrap() {
         log.info("Bootstrapping plugins (mode={})", properties.getRuntimeMode());
-        pluginManager.loadPlugins();
 
         if (properties.isDevelopment()) {
+            // Important: ne pas loadPlugins() depuis plugins/ — les JAR stale masqueraient target/classes
             for (String fixed : properties.getFixedPluginPath()) {
-                Path path = Path.of(fixed).toAbsolutePath().normalize();
-                if (!Files.exists(path)) {
-                    log.warn("fixed-plugin-path does not exist: {}", path);
+                Path path = resolvePluginPath(fixed);
+                if (path == null) {
+                    log.warn("fixed-plugin-path not found: {} (tried cwd and parent)", fixed);
                     continue;
                 }
                 try {
@@ -93,6 +93,8 @@ public class Pf4jPluginRegistry implements PluginRegistryPort, ApplicationListen
                     log.warn("Could not load development plugin from {}: {}", path, e.getMessage());
                 }
             }
+        } else {
+            pluginManager.loadPlugins();
         }
 
         pluginManager.startPlugins();
@@ -515,6 +517,21 @@ public class Pf4jPluginRegistry implements PluginRegistryPort, ApplicationListen
         }
         permissionCatalog.registerPluginPermissions(pluginId, merged.values());
         log.info("Registered {} permission(s) for plugin {}", merged.size(), pluginId);
+    }
+
+    /**
+     * Résout un chemin plugin relatif que le cwd soit la racine du repo ou erp-core/.
+     */
+    private Path resolvePluginPath(String fixed) {
+        Path direct = Path.of(fixed).toAbsolutePath().normalize();
+        if (Files.exists(direct)) {
+            return direct;
+        }
+        Path fromParent = Path.of("..").resolve(fixed).toAbsolutePath().normalize();
+        if (Files.exists(fromParent)) {
+            return fromParent;
+        }
+        return null;
     }
 
     @PreDestroy

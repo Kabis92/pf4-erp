@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as ReactJsxRuntime from 'react/jsx-runtime';
 import * as ReactRouterDOM from 'react-router-dom';
-import { getToken } from '@/lib/auth';
+import { getStoredUser, getToken } from '@/lib/auth';
 import { pluginRegistry, type PluginDefinition } from './registry';
 import { useSyncExternalStore } from 'react';
 
@@ -11,6 +11,7 @@ export type PluginRuntimeApi = {
   registerMenu: typeof pluginRegistry.registerMenu;
   registerRoute: typeof pluginRegistry.registerRoute;
   getAuthToken: () => string | null;
+  getPermissions: () => string[];
   apiBaseUrl: string;
 };
 
@@ -38,6 +39,7 @@ function ensureRuntimeApi() {
       registerMenu: (item) => pluginRegistry.registerMenu(item),
       registerRoute: (path, component) => pluginRegistry.registerRoute(path, component),
       getAuthToken: () => getToken(),
+      getPermissions: () => getStoredUser()?.permissions ?? [],
       apiBaseUrl: '',
     };
   }
@@ -46,11 +48,16 @@ function ensureRuntimeApi() {
 
 function loadScript(src: string) {
   return new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>(`script[data-plugin-src="${src}"]`);
-    if (existing) {
-      resolve();
-      return;
-    }
+    // Drop previous tag for same plugin asset path (ignore query) so updates reload
+    const base = src.split('?')[0];
+    document
+      .querySelectorAll<HTMLScriptElement>('script[data-plugin-src]')
+      .forEach((el) => {
+        const prev = el.dataset.pluginSrc ?? '';
+        if (prev.split('?')[0] === base) {
+          el.remove();
+        }
+      });
     const script = document.createElement('script');
     script.src = src;
     script.async = true;
@@ -75,6 +82,7 @@ function loadStylesheet(href: string) {
 export async function loadPlugins(): Promise<PluginDefinition[]> {
   exposeSharedDeps();
   ensureRuntimeApi();
+  pluginRegistry.clear();
 
   const token = getToken();
   const res = await fetch('/api/plugins', {
@@ -90,11 +98,15 @@ export async function loadPlugins(): Promise<PluginDefinition[]> {
       continue;
     }
     try {
-      const styleUrl = plugin.entry.replace(/main\.js$/, 'style.css');
-      if (styleUrl !== plugin.entry) {
-        loadStylesheet(styleUrl);
+      const entryPath = plugin.entry.split('?')[0];
+      const styleFromEntry = entryPath.replace(/main\.js$/, 'style.css');
+      if (styleFromEntry !== entryPath) {
+        loadStylesheet(styleFromEntry);
       }
-      await loadScript(plugin.entry);
+      const bust = plugin.entry.includes('?')
+        ? `${plugin.entry}&_=${Date.now()}`
+        : `${plugin.entry}?_=${Date.now()}`;
+      await loadScript(bust);
     } catch (err) {
       console.error(`[PluginLoader] failed to load ${plugin.id}`, err);
     }
