@@ -20,6 +20,10 @@
             <artifactId>erp-plugin-api</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.pf4erp</groupId>
+            <artifactId>plugin-rh-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.pf4j</groupId>
             <artifactId>pf4j</artifactId>
             <scope>provided</scope>

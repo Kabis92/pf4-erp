@@ -1,10 +1,13 @@
 package com.pf4erp.todo.config;
 
+import com.pf4erp.api.ExtensionGetter;
+import com.pf4erp.todo.adapters.in.event.RhEmployeEventListener;
+import com.pf4erp.todo.adapters.in.web.AssigneeController;
 import com.pf4erp.todo.adapters.in.web.ProjectController;
 import com.pf4erp.todo.adapters.in.web.TaskController;
 import com.pf4erp.todo.adapters.out.persistence.mongo.MongoProjectRepository;
 import com.pf4erp.todo.adapters.out.persistence.mongo.MongoTaskRepository;
-import com.pf4erp.todo.adapters.out.rh.MongoEmployeDirectoryAdapter;
+import com.pf4erp.todo.adapters.out.rh.ExtensionEmployeDirectoryAdapter;
 import com.pf4erp.todo.application.ProjectUseCase;
 import com.pf4erp.todo.application.TaskUseCase;
 import com.pf4erp.todo.application.port.EmployeDirectoryPort;
@@ -30,8 +33,8 @@ public class TodoPluginConfiguration {
     }
 
     @Bean
-    public EmployeDirectoryPort employeDirectoryPort(MongoTemplate mongoTemplate) {
-        return new MongoEmployeDirectoryAdapter(mongoTemplate);
+    public EmployeDirectoryPort employeDirectoryPort(ExtensionGetter extensionGetter) {
+        return new ExtensionEmployeDirectoryAdapter(extensionGetter);
     }
 
     @Bean
@@ -56,5 +59,15 @@ public class TodoPluginConfiguration {
     @Bean
     public TaskController taskController(TaskUseCase taskUseCase, EmployeDirectoryPort employeDirectoryPort) {
         return new TaskController(taskUseCase, employeDirectoryPort);
+    }
+
+    @Bean
+    public AssigneeController assigneeController(EmployeDirectoryPort employeDirectoryPort) {
+        return new AssigneeController(employeDirectoryPort);
+    }
+
+    @Bean
+    public RhEmployeEventListener rhEmployeEventListener() {
+        return new RhEmployeEventListener();
     }
 }

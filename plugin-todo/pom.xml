@@ -19,6 +19,12 @@
             <groupId>com.pf4erp</groupId>
             <artifactId>erp-plugin-api</artifactId>
         </dependency>
+        <!-- Contrats RH uniquement (provided = classloader parent / Core), jamais plugin-rh.jar -->
+        <dependency>
+            <groupId>com.pf4erp</groupId>
+            <artifactId>plugin-rh-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.pf4j</groupId>
             <artifactId>pf4j</artifactId>

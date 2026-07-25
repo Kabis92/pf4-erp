@@ -5,6 +5,7 @@ import com.pf4erp.rh.domain.Employe;
 import com.pf4erp.rh.domain.EmployeId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -22,7 +23,10 @@ class EmployeUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new EmployeUseCase(new FakeEmployeRepository());
+        ApplicationEventPublisher noopPublisher = event -> {
+            // unit tests: events bridgés hors scope
+        };
+        useCase = new EmployeUseCase(new FakeEmployeRepository(), noopPublisher);
     }
 
     @Test

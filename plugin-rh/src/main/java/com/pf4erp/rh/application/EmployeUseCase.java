@@ -1,8 +1,12 @@
 package com.pf4erp.rh.application;
 
+import com.pf4erp.rh.api.event.EmployeDeletedEvent;
+import com.pf4erp.rh.api.event.EmployeLinkedToUserEvent;
+import com.pf4erp.rh.api.event.EmployeUnlinkedFromUserEvent;
 import com.pf4erp.rh.application.port.EmployeRepository;
 import com.pf4erp.rh.domain.Employe;
 import com.pf4erp.rh.domain.EmployeId;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -12,9 +16,11 @@ import java.util.Optional;
 public class EmployeUseCase {
 
     private final EmployeRepository employeRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public EmployeUseCase(EmployeRepository employeRepository) {
+    public EmployeUseCase(EmployeRepository employeRepository, ApplicationEventPublisher eventPublisher) {
         this.employeRepository = Objects.requireNonNull(employeRepository);
+        this.eventPublisher = Objects.requireNonNull(eventPublisher);
     }
 
     public List<Employe> list() {
@@ -36,7 +42,9 @@ public class EmployeUseCase {
     public Employe create(String nom, String email, String poste, LocalDate dateEmbauche, String userId) {
         validateUserLink(userId, null);
         Employe employe = new Employe(EmployeId.generate(), nom, email, poste, dateEmbauche, userId);
-        return employeRepository.save(employe);
+        Employe saved = employeRepository.save(employe);
+        publishLinkChanges(null, saved);
+        return saved;
     }
 
     public Employe update(
@@ -49,16 +57,42 @@ public class EmployeUseCase {
     ) {
         Employe existing = get(id);
         validateUserLink(userId, id);
-        return employeRepository.save(existing.with(nom, email, poste, dateEmbauche, userId));
+        Employe updated = employeRepository.save(existing.with(nom, email, poste, dateEmbauche, userId));
+        publishLinkChanges(existing, updated);
+        return updated;
     }
 
     public void delete(EmployeId id) {
-        get(id);
+        Employe existing = get(id);
         employeRepository.delete(id);
+        eventPublisher.publishEvent(new EmployeDeletedEvent(this, existing.getId().getValue(), existing.getUserId()));
     }
 
     public long count() {
         return employeRepository.count();
+    }
+
+    private void publishLinkChanges(Employe before, Employe after) {
+        String previousUserId = before != null ? before.getUserId() : null;
+        String nextUserId = after.getUserId();
+        if (Objects.equals(previousUserId, nextUserId)) {
+            return;
+        }
+        if (previousUserId != null) {
+            eventPublisher.publishEvent(new EmployeUnlinkedFromUserEvent(
+                    this,
+                    after.getId().getValue(),
+                    previousUserId
+            ));
+        }
+        if (nextUserId != null) {
+            eventPublisher.publishEvent(new EmployeLinkedToUserEvent(
+                    this,
+                    after.getId().getValue(),
+                    nextUserId,
+                    after.getNom()
+            ));
+        }
     }
 
     private void validateUserLink(String userId, EmployeId excludingId) {

@@ -44,6 +44,8 @@ public class Pf4jPluginRegistry implements PluginRegistryPort, ApplicationListen
     private final PluginSwaggerBridge swaggerBridge;
     private final MongoTemplate mongoTemplate;
     private final PermissionCatalogPort permissionCatalog;
+    private final SharedEventHub sharedEventHub;
+    private final PluginContextRegistry pluginContextRegistry;
 
     private final Map<String, RuntimePlugin> runtimePlugins = new ConcurrentHashMap<>();
     private volatile boolean bootstrapped;
@@ -55,7 +57,9 @@ public class Pf4jPluginRegistry implements PluginRegistryPort, ApplicationListen
             PluginControllerRegistrar controllerRegistrar,
             PluginSwaggerBridge swaggerBridge,
             MongoTemplate mongoTemplate,
-            PermissionCatalogPort permissionCatalog
+            PermissionCatalogPort permissionCatalog,
+            SharedEventHub sharedEventHub,
+            PluginContextRegistry pluginContextRegistry
     ) {
         this.pluginManager = pluginManager;
         this.properties = properties;
@@ -64,6 +68,8 @@ public class Pf4jPluginRegistry implements PluginRegistryPort, ApplicationListen
         this.swaggerBridge = swaggerBridge;
         this.mongoTemplate = mongoTemplate;
         this.permissionCatalog = permissionCatalog;
+        this.sharedEventHub = sharedEventHub;
+        this.pluginContextRegistry = pluginContextRegistry;
     }
 
     @Override
@@ -143,6 +149,9 @@ public class Pf4jPluginRegistry implements PluginRegistryPort, ApplicationListen
                     child.register(config);
                 }
                 child.refresh();
+
+                pluginContextRegistry.register(pluginId, child);
+                sharedEventHub.registerPluginContext(pluginId, child);
 
                 Map<String, Object> controllers = child.getBeansWithAnnotation(RestController.class);
                 controllerRegistrar.registerControllers(pluginId, controllers);
@@ -484,6 +493,8 @@ public class Pf4jPluginRegistry implements PluginRegistryPort, ApplicationListen
         controllerRegistrar.unregisterControllers(pluginId);
         swaggerBridge.unregisterControllers(pluginId);
         permissionCatalog.deactivatePlugin(pluginId);
+        sharedEventHub.unregisterPluginContext(pluginId);
+        pluginContextRegistry.unregister(pluginId);
         if (runtime != null && runtime.childContext() != null) {
             try {
                 runtime.childContext().close();

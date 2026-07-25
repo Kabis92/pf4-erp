@@ -20,6 +20,7 @@
 
     <modules>
         <module>erp-plugin-api</module>
+        <module>plugin-rh-api</module>
         <module>erp-core</module>
         <module>plugin-rh</module>
         <module>plugin-todo</module>
@@ -38,6 +39,11 @@
             <dependency>
                 <groupId>com.pf4erp</groupId>
                 <artifactId>erp-plugin-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.pf4erp</groupId>
+                <artifactId>plugin-rh-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

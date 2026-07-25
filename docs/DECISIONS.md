@@ -99,3 +99,20 @@ Décisions figées pour pf4-erp. Complète [CORE_ARCHITECTURE.md](CORE_ARCHITECT
 - Extension points front : slots multi-instance (`dashboard.widgets`, `menu.main`).
 
 **Conséquences :** Packaging et découverte UI standardisés ; pas d’adoption du modèle CRD / Extension resources Halo pour la persistance métier.
+
+---
+
+## ADR-008 — Communication inter-plugins (API + ExtensionPoint + SharedEvent)
+
+**Statut :** Accepté
+
+**Contexte :** Les contextes Spring des plugins sont isolés. Le soft-link Todo → collection Mongo `rh_employes` fonctionnait mais cassait l’encapsulation. Halo propose trois mécanismes : module `*-api`, extension points, événements partagés.
+
+**Décision :**
+
+1. **`plugin-<id>-api`** : contrats du fournisseur (DTO, `ExtensionPoint`, events). Consommateurs en `provided` ; Core dépend de l’API pour le classpath parent.
+2. **`ExtensionGetter`** (Core) : résolution synchrone des beans d’extension exposés par les plugins démarrés.
+3. **`@SharedEvent` + `SharedEventHub`** : relais d’événements Spring entre contextes enfants (et Core).
+4. Interdit : dépendance Maven vers le JAR d’implémentation d’un autre plugin ; lecture directe des collections Mongo d’un autre module.
+
+**Conséquences :** `plugin-rh-api` + migration Todo vers `EmployeDirectory` ; doc développeur [PLUGIN_INTERACTION.md](PLUGIN_INTERACTION.md). Pattern à répliquer pour tout nouveau partage inter-modules.

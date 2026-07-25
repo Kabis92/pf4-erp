@@ -3,6 +3,9 @@ version: 0.1.0-SNAPSHOT
 displayName: Todo
 description: Projets et tâches assignées aux employés
 requires: ">=0.1.0"
+# Dépendance runtime Halo-like : Todo consomme EmployeDirectory + @SharedEvent de RH
+pluginDependencies:
+  rh: ">=0.1.0"
 ui:
   entrypoint: ui/main.js
   style: ui/style.css

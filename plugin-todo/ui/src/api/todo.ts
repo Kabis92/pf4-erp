@@ -24,8 +24,12 @@ export type Task = {
 export type EmployeOption = {
   id: string;
   nom: string;
-  userId: string | null;
 };
+
+/** Assignables pour Gestion — via facade Todo (pas /api/rh). */
+export function listEmployesForAssign() {
+  return request<EmployeOption[]>('/api/todo/assignees');
+}
 
 function getApi() {
   return window.__PF4ERP__;
@@ -125,12 +129,6 @@ export function updateTaskStatus(id: string, status: TaskStatus) {
 
 export function deleteTask(id: string) {
   return request<void>(`/api/todo/tasks/${id}`, { method: 'DELETE' });
-}
-
-/** Employés pouvant recevoir une tâche = liés à un compte utilisateur. */
-export async function listEmployesForAssign() {
-  const all = await request<EmployeOption[]>('/api/rh/employes');
-  return all.filter((e) => Boolean(e.userId));
 }
 
 export function statusLabel(status: TaskStatus) {

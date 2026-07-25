@@ -104,10 +104,11 @@ Swagger : `/swagger-ui.html` — groupes `core` / `all` + **un groupe par plugin
 
 ```
 pf4-erp/
-├── erp-plugin-api/    # Contrats partagés (ErpModuleExtension)
-├── erp-core/          # Shell Spring + PF4J + auth JWT + RBAC
+├── erp-plugin-api/    # Contrats Core (ErpModuleExtension, SharedEvent, ExtensionGetter)
+├── plugin-rh-api/     # Contrats publics RH (EmployeDirectory, events)
+├── erp-core/          # Shell Spring + PF4J + auth JWT + RBAC + SharedEventHub
 ├── plugin-rh/         # Module RH (employés + lien userId)
-├── plugin-todo/       # Module Todo (projets / tâches assignées)
+├── plugin-todo/       # Module Todo (consomme plugin-rh-api)
 ├── erp-ui/            # Shell React shadcn (PluginLoader, ExtensionSlot)
 ├── plugins/           # JARs runtime (deployment)
 └── docs/
@@ -118,6 +119,7 @@ pf4-erp/
 | Document | Rôle |
 |----------|------|
 | [docs/CORE_ARCHITECTURE.md](docs/CORE_ARCHITECTURE.md) | Référence d’architecture |
+| [docs/PLUGIN_INTERACTION.md](docs/PLUGIN_INTERACTION.md) | Communication inter-plugins (API, extensions, events) |
 | [docs/PROMPT_MVP.md](docs/PROMPT_MVP.md) | Prompt maître MVP |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | ADR |
 

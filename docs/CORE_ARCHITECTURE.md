@@ -49,14 +49,17 @@ Chaque plugin dispose d’un ClassLoader enfant PF4J. Les dépendances partagée
 ```
 pf4-erp/
 ├── pom.xml                          # parent
-├── erp-plugin-api/                  # contrats partagés (ExtensionPoint, ErpModuleExtension)
-├── erp-core/                        # application Spring Boot + PF4J
+├── erp-plugin-api/                  # contrats Core (ExtensionPoint, SharedEvent, ExtensionGetter)
+├── plugin-rh-api/                   # contrats publics RH (EmployeRef, EmployeDirectory, events)
+├── erp-core/                        # application Spring Boot + PF4J + SharedEventHub
 ├── plugin-rh/                       # plugin métier RH (JAR PF4J + ui/)
+├── plugin-todo/                     # plugin Todo (consomme plugin-rh-api)
 ├── erp-ui/                          # shell React + TypeScript (Vite + shadcn)
 └── docs/
 ```
 
-`erp-plugin-api` joue le rôle de la *shared suite* Halo : interfaces et DTO de contrat uniquement, sans logique métier ni Spring Data.
+`erp-plugin-api` joue le rôle de la *shared suite* Halo (socle Core).  
+Chaque fournisseur métier peut exposer un **`plugin-*-api`** (contrats uniquement) — voir [PLUGIN_INTERACTION.md](PLUGIN_INTERACTION.md).
 
 ### Convention de packages hexagonaux
 
@@ -318,8 +321,9 @@ Le Core **n’importe jamais** `MongoEmployeRepository` ; il ne connaît que le 
 ### Dépendances
 
 - Dépendances **métier / spécifiques** → dans le plugin (ClassLoader plugin).
-- Contrats partagés → `erp-plugin-api` uniquement.
-- Éviter que le Core dépende d’un plugin.
+- Contrats Core → `erp-plugin-api` ; contrats d’un fournisseur → `plugin-<id>-api` (consommateurs en `provided`).
+- Communication inter-plugins → ExtensionPoint + `@SharedEvent` ([PLUGIN_INTERACTION.md](PLUGIN_INTERACTION.md)) ; **interdit** : lecture Mongo croisée, dépendance au JAR d’implémentation d’un autre plugin.
+- Éviter que le Core dépende d’un plugin d’implémentation (les `*-api` sur le classpath parent sont OK).
 
 ### Migrations Mongo
 
