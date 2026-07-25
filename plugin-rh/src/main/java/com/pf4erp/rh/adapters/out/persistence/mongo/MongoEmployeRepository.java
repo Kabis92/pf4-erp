@@ -3,6 +3,7 @@ package com.pf4erp.rh.adapters.out.persistence.mongo;
 import com.pf4erp.rh.application.port.EmployeRepository;
 import com.pf4erp.rh.domain.Employe;
 import com.pf4erp.rh.domain.EmployeId;
+import com.pf4erp.rh.domain.EmployeStatut;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -69,9 +70,11 @@ public class MongoEmployeRepository implements EmployeRepository {
                 EmployeId.of(doc.getId()),
                 doc.getNom(),
                 doc.getEmail(),
+                doc.getTelephone(),
                 doc.getPoste(),
                 doc.getDateEmbauche(),
-                doc.getUserId()
+                doc.getUserId(),
+                EmployeStatut.from(doc.getStatut())
         );
     }
 
@@ -80,9 +83,11 @@ public class MongoEmployeRepository implements EmployeRepository {
         doc.setId(employe.getId().getValue());
         doc.setNom(employe.getNom());
         doc.setEmail(employe.getEmail());
+        doc.setTelephone(employe.getTelephone());
         doc.setPoste(employe.getPoste());
         doc.setDateEmbauche(employe.getDateEmbauche());
         doc.setUserId(employe.getUserId());
+        doc.setStatut(employe.getStatut().name());
         return doc;
     }
 }

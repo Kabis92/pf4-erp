@@ -1,18 +1,25 @@
+export type EmployeStatut = 'ACTIF' | 'CONGE' | 'INACTIF';
+
 export type Employe = {
   id: string;
   nom: string;
   email: string;
+  telephone: string | null;
   poste: string;
   dateEmbauche: string;
   userId: string | null;
+  statut: EmployeStatut;
+  hasAccess: boolean;
 };
 
 export type EmployeInput = {
   nom: string;
   email: string;
+  telephone: string | null;
   poste: string;
   dateEmbauche: string;
   userId: string | null;
+  statut: EmployeStatut;
 };
 
 export type UserOption = {
@@ -83,8 +90,36 @@ export function updateEmploye(id: string, input: EmployeInput) {
   });
 }
 
+export function setEmployeAccess(id: string, enabled: boolean, userId?: string | null) {
+  return request<Employe>(`/api/rh/employes/${id}/access`, {
+    method: 'PUT',
+    body: JSON.stringify({ enabled, userId: userId ?? null }),
+  });
+}
+
 export function deleteEmploye(id: string) {
   return request<void>(`/api/rh/employes/${id}`, {
     method: 'DELETE',
   });
+}
+
+export function statutLabel(statut: EmployeStatut) {
+  switch (statut) {
+    case 'ACTIF':
+      return 'Active';
+    case 'CONGE':
+      return 'On Leave';
+    case 'INACTIF':
+      return 'Inactive';
+    default:
+      return statut;
+  }
+}
+
+export function formatJoiningDate(iso: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) {
+    return iso;
+  }
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }

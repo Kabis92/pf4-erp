@@ -3,6 +3,7 @@ package com.pf4erp.rh.adapters.in.web;
 import com.pf4erp.rh.application.EmployeUseCase;
 import com.pf4erp.rh.domain.Employe;
 import com.pf4erp.rh.domain.EmployeId;
+import com.pf4erp.rh.domain.EmployeStatut;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -80,12 +81,16 @@ public class EmployeController {
             return toDto(employeUseCase.create(
                     request.nom(),
                     request.email(),
+                    request.telephone(),
                     request.poste(),
                     request.dateEmbauche(),
-                    request.userId()
+                    request.userId(),
+                    parseStatut(request.statut())
             ));
         } catch (EmployeUseCase.UserAlreadyLinkedException ex) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage());
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Statut invalide");
         }
     }
 
@@ -97,14 +102,34 @@ public class EmployeController {
                     EmployeId.of(id),
                     request.nom(),
                     request.email(),
+                    request.telephone(),
                     request.poste(),
                     request.dateEmbauche(),
-                    request.userId()
+                    request.userId(),
+                    parseStatut(request.statut())
             ));
         } catch (EmployeUseCase.EmployeNotFoundException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
         } catch (EmployeUseCase.UserAlreadyLinkedException ex) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage());
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Statut invalide");
+        }
+    }
+
+    @PutMapping("/{id}/access")
+    @PreAuthorize("hasAuthority('rh.employe.write')")
+    public EmployeDto setAccess(@PathVariable String id, @Valid @RequestBody AccessRequest request) {
+        try {
+            return toDto(employeUseCase.setSystemAccess(
+                    EmployeId.of(id),
+                    request.enabled(),
+                    request.userId()
+            ));
+        } catch (EmployeUseCase.EmployeNotFoundException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+        } catch (EmployeUseCase.UserAlreadyLinkedException | EmployeUseCase.AccessUserRequiredException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
         }
     }
 
@@ -117,6 +142,13 @@ public class EmployeController {
         } catch (EmployeUseCase.EmployeNotFoundException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
         }
+    }
+
+    private EmployeStatut parseStatut(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        return EmployeStatut.from(raw);
     }
 
     @SuppressWarnings("unchecked")
@@ -139,17 +171,28 @@ public class EmployeController {
                 employe.getId().getValue(),
                 employe.getNom(),
                 employe.getEmail(),
+                employe.getTelephone(),
                 employe.getPoste(),
                 employe.getDateEmbauche(),
-                employe.getUserId()
+                employe.getUserId(),
+                employe.getStatut().name(),
+                employe.hasAccess()
         );
     }
 
     public record EmployeRequest(
             @NotBlank String nom,
             @NotBlank @Email String email,
+            String telephone,
             @NotBlank String poste,
             @NotNull LocalDate dateEmbauche,
+            String userId,
+            String statut
+    ) {
+    }
+
+    public record AccessRequest(
+            boolean enabled,
             String userId
     ) {
     }
@@ -158,9 +201,12 @@ public class EmployeController {
             String id,
             String nom,
             String email,
+            String telephone,
             String poste,
             LocalDate dateEmbauche,
-            String userId
+            String userId,
+            String statut,
+            boolean hasAccess
     ) {
     }
 

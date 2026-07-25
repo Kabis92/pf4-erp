@@ -18,6 +18,8 @@ public class TaskDocument {
     @Indexed
     private String assigneeEmployeId;
     private String createdByUserId;
+    private Boolean favorite;
+    private Boolean deleted;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -35,6 +37,10 @@ public class TaskDocument {
     public void setAssigneeEmployeId(String assigneeEmployeId) { this.assigneeEmployeId = assigneeEmployeId; }
     public String getCreatedByUserId() { return createdByUserId; }
     public void setCreatedByUserId(String createdByUserId) { this.createdByUserId = createdByUserId; }
+    public Boolean getFavorite() { return favorite; }
+    public void setFavorite(Boolean favorite) { this.favorite = favorite; }
+    public Boolean getDeleted() { return deleted; }
+    public void setDeleted(Boolean deleted) { this.deleted = deleted; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

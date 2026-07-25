@@ -13,11 +13,15 @@ public class EmployeDocument {
     private String id;
     private String nom;
     private String email;
+    private String telephone;
     private String poste;
     private LocalDate dateEmbauche;
 
     @Indexed(unique = true, sparse = true)
     private String userId;
+
+    /** ACTIF | CONGE | INACTIF (legacy ONBOARDING/SORTIE mappés côté domaine). */
+    private String statut;
 
     public String getId() {
         return id;
@@ -43,6 +47,14 @@ public class EmployeDocument {
         this.email = email;
     }
 
+    public String getTelephone() {
+        return telephone;
+    }
+
+    public void setTelephone(String telephone) {
+        this.telephone = telephone;
+    }
+
     public String getPoste() {
         return poste;
     }
@@ -65,5 +77,13 @@ public class EmployeDocument {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public String getStatut() {
+        return statut;
+    }
+
+    public void setStatut(String statut) {
+        this.statut = statut;
     }
 }

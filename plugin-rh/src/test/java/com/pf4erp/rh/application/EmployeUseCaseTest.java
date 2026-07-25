@@ -24,7 +24,6 @@ class EmployeUseCaseTest {
     @BeforeEach
     void setUp() {
         ApplicationEventPublisher noopPublisher = event -> {
-            // unit tests: events bridgés hors scope
         };
         useCase = new EmployeUseCase(new FakeEmployeRepository(), noopPublisher);
     }
@@ -32,7 +31,7 @@ class EmployeUseCaseTest {
     @Test
     void createAndList() {
         Employe created = useCase.create(
-                "Ada Lovelace", "ada@example.com", "Ingénieure", LocalDate.of(2024, 1, 15), null
+                "Ada Lovelace", "ada@example.com", null, "Ingénieure", LocalDate.of(2024, 1, 15), null, null
         );
         assertEquals(1, useCase.list().size());
         assertEquals("Ada Lovelace", useCase.get(created.getId()).getNom());
@@ -41,9 +40,9 @@ class EmployeUseCaseTest {
 
     @Test
     void update() {
-        Employe created = useCase.create("Ada", "ada@example.com", "Dev", LocalDate.of(2024, 1, 1), "u1");
+        Employe created = useCase.create("Ada", "ada@example.com", "+1 555", "Dev", LocalDate.of(2024, 1, 1), "u1", null);
         Employe updated = useCase.update(
-                created.getId(), "Ada L.", "ada@example.com", "Lead", LocalDate.of(2024, 1, 1), "u1"
+                created.getId(), "Ada L.", "ada@example.com", "+1 555", "Lead", LocalDate.of(2024, 1, 1), "u1", null
         );
         assertEquals("Lead", updated.getPoste());
         assertEquals("u1", updated.getUserId());
@@ -57,9 +56,9 @@ class EmployeUseCaseTest {
 
     @Test
     void rejectDuplicateUserLink() {
-        useCase.create("Ada", "ada@example.com", "Dev", LocalDate.of(2024, 1, 1), "u1");
+        useCase.create("Ada", "ada@example.com", null, "Dev", LocalDate.of(2024, 1, 1), "u1", null);
         assertThrows(EmployeUseCase.UserAlreadyLinkedException.class,
-                () -> useCase.create("Bob", "bob@example.com", "Dev", LocalDate.of(2024, 1, 1), "u1"));
+                () -> useCase.create("Bob", "bob@example.com", null, "Dev", LocalDate.of(2024, 1, 1), "u1", null));
     }
 
     static class FakeEmployeRepository implements EmployeRepository {

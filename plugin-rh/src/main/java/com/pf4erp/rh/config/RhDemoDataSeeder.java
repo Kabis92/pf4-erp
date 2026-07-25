@@ -52,6 +52,7 @@ public class RhDemoDataSeeder {
             employe.setPoste("Collaborateur");
             employe.setDateEmbauche(LocalDate.now().minusMonths(6));
             employe.setUserId(userId);
+            employe.setStatut("ACTIF");
             mongoTemplate.save(employe);
             log.info("Seeded demo employé linked to user {}", userId);
         } catch (Exception e) {

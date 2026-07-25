@@ -6,6 +6,7 @@ import com.pf4erp.rh.api.event.EmployeUnlinkedFromUserEvent;
 import com.pf4erp.rh.application.port.EmployeRepository;
 import com.pf4erp.rh.domain.Employe;
 import com.pf4erp.rh.domain.EmployeId;
+import com.pf4erp.rh.domain.EmployeStatut;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDate;
@@ -39,9 +40,27 @@ public class EmployeUseCase {
         return employeRepository.findByUserId(userId);
     }
 
-    public Employe create(String nom, String email, String poste, LocalDate dateEmbauche, String userId) {
+    public Employe create(
+            String nom,
+            String email,
+            String telephone,
+            String poste,
+            LocalDate dateEmbauche,
+            String userId,
+            EmployeStatut statut
+    ) {
         validateUserLink(userId, null);
-        Employe employe = new Employe(EmployeId.generate(), nom, email, poste, dateEmbauche, userId);
+        EmployeStatut resolved = statut != null ? statut : EmployeStatut.ACTIF;
+        Employe employe = new Employe(
+                EmployeId.generate(),
+                nom,
+                email,
+                telephone,
+                poste,
+                dateEmbauche,
+                userId,
+                resolved
+        );
         Employe saved = employeRepository.save(employe);
         publishLinkChanges(null, saved);
         return saved;
@@ -51,13 +70,38 @@ public class EmployeUseCase {
             EmployeId id,
             String nom,
             String email,
+            String telephone,
             String poste,
             LocalDate dateEmbauche,
-            String userId
+            String userId,
+            EmployeStatut statut
     ) {
         Employe existing = get(id);
         validateUserLink(userId, id);
-        Employe updated = employeRepository.save(existing.with(nom, email, poste, dateEmbauche, userId));
+        EmployeStatut resolved = statut != null ? statut : existing.getStatut();
+        Employe updated = employeRepository.save(
+                existing.with(nom, email, telephone, poste, dateEmbauche, userId, resolved)
+        );
+        publishLinkChanges(existing, updated);
+        return updated;
+    }
+
+    /** Active / désactive l’accès système (lien compte). */
+    public Employe setSystemAccess(EmployeId id, boolean enabled, String userIdWhenEnabling) {
+        Employe existing = get(id);
+        if (!enabled) {
+            Employe updated = employeRepository.save(existing.withUserId(null));
+            publishLinkChanges(existing, updated);
+            return updated;
+        }
+        String targetUserId = userIdWhenEnabling != null && !userIdWhenEnabling.isBlank()
+                ? userIdWhenEnabling.trim()
+                : existing.getUserId();
+        if (targetUserId == null || targetUserId.isBlank()) {
+            throw new AccessUserRequiredException();
+        }
+        validateUserLink(targetUserId, id);
+        Employe updated = employeRepository.save(existing.withUserId(targetUserId));
         publishLinkChanges(existing, updated);
         return updated;
     }
@@ -113,6 +157,12 @@ public class EmployeUseCase {
     public static class UserAlreadyLinkedException extends RuntimeException {
         public UserAlreadyLinkedException(String userId) {
             super("Ce compte utilisateur est déjà lié à un autre employé: " + userId);
+        }
+    }
+
+    public static class AccessUserRequiredException extends RuntimeException {
+        public AccessUserRequiredException() {
+            super("Sélectionnez un compte utilisateur pour activer l’accès système");
         }
     }
 }

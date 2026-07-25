@@ -30,7 +30,7 @@ export function EmployeCountWidget() {
         {error ? '—' : count === null ? '…' : count}
       </p>
       <p className="mt-1 text-sm text-muted-foreground">
-        {error ? `Erreur: ${error}` : 'Employés enregistrés'}
+        {error ? `Erreur: ${error}` : 'Effectif · cycle de vie'}
       </p>
     </div>
   );

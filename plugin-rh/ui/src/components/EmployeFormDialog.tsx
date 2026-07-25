@@ -1,6 +1,12 @@
 import { FormEvent, useEffect, useId, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
-import { listDirectoryUsers, type Employe, type EmployeInput, type UserOption } from '../api/employes';
+import {
+  listDirectoryUsers,
+  type Employe,
+  type EmployeInput,
+  type EmployeStatut,
+  type UserOption,
+} from '../api/employes';
 
 type Mode = 'create' | 'edit';
 
@@ -12,12 +18,16 @@ type Props = {
   onSubmit: (input: EmployeInput) => Promise<void>;
 };
 
+const STATUTS: EmployeStatut[] = ['ACTIF', 'CONGE', 'INACTIF'];
+
 const empty: EmployeInput = {
   nom: '',
   email: '',
+  telephone: null,
   poste: '',
   dateEmbauche: new Date().toISOString().slice(0, 10),
   userId: null,
+  statut: 'ACTIF',
 };
 
 export function EmployeFormDialog({ open, mode, initial, onClose, onSubmit }: Props) {
@@ -40,9 +50,11 @@ export function EmployeFormDialog({ open, mode, initial, onClose, onSubmit }: Pr
       setForm({
         nom: initial.nom,
         email: initial.email,
+        telephone: initial.telephone,
         poste: initial.poste,
         dateEmbauche: initial.dateEmbauche,
         userId: initial.userId,
+        statut: normalizeStatut(initial.statut),
       });
     } else {
       setForm(empty);
@@ -61,9 +73,11 @@ export function EmployeFormDialog({ open, mode, initial, onClose, onSubmit }: Pr
       await onSubmit({
         nom: form.nom.trim(),
         email: form.email.trim(),
+        telephone: form.telephone?.trim() || null,
         poste: form.poste.trim(),
         dateEmbauche: form.dateEmbauche,
         userId: form.userId || null,
+        statut: form.statut,
       });
       onClose();
     } catch (err) {
@@ -75,27 +89,20 @@ export function EmployeFormDialog({ open, mode, initial, onClose, onSubmit }: Pr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/40"
-        aria-label="Fermer"
-        onClick={onClose}
-      />
+      <button type="button" className="absolute inset-0 bg-black/40" aria-label="Fermer" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative z-10 flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+        className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg"
       >
-        <div className="mb-0 shrink-0 border-b border-border p-5 pb-4">
+        <div className="shrink-0 border-b border-border p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 id={titleId} className="text-base font-semibold">
-                {mode === 'create' ? 'Nouvel employé' : 'Modifier l’employé'}
+                {mode === 'create' ? 'Add Employee' : 'Edit Employee'}
               </h2>
-              <p className="text-sm text-muted-foreground">
-                Liez un compte pour les tâches Todo.
-              </p>
+              <p className="text-sm text-muted-foreground">Profile, status and system access.</p>
             </div>
             <button
               type="button"
@@ -109,63 +116,87 @@ export function EmployeFormDialog({ open, mode, initial, onClose, onSubmit }: Pr
         </div>
 
         <form className="space-y-3 overflow-y-auto p-5" onSubmit={(e) => void handleSubmit(e)}>
-          <Field label="Nom">
+          <Field label="Full name">
             <input
               required
               value={form.nom}
               onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))}
               className={inputClass}
-              placeholder="Ada Lovelace"
+              placeholder="Khalid Ali"
               autoFocus
             />
           </Field>
-          <Field label="Compte utilisateur (lien login)">
-            <select
-              value={form.userId ?? ''}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, userId: e.target.value ? e.target.value : null }))
-              }
-              className={inputClass}
-            >
-              <option value="">— Aucun —</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.displayName} (@{u.username})
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Nécessaire pour assigner des tâches Todo à cet employé.
-            </p>
-          </Field>
-          <Field label="Email">
-            <input
-              required
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className={inputClass}
-              placeholder="ada@example.com"
-            />
-          </Field>
-          <Field label="Poste">
-            <input
-              required
-              value={form.poste}
-              onChange={(e) => setForm((f) => ({ ...f, poste: e.target.value }))}
-              className={inputClass}
-              placeholder="Ingénieure"
-            />
-          </Field>
-          <Field label="Date d’embauche">
-            <input
-              required
-              type="date"
-              value={form.dateEmbauche}
-              onChange={(e) => setForm((f) => ({ ...f, dateEmbauche: e.target.value }))}
-              className={inputClass}
-            />
-          </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Email">
+              <input
+                required
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                className={inputClass}
+                placeholder="khalid@company.com"
+              />
+            </Field>
+            <Field label="Phone">
+              <input
+                value={form.telephone ?? ''}
+                onChange={(e) => setForm((f) => ({ ...f, telephone: e.target.value }))}
+                className={inputClass}
+                placeholder="+966 561234567"
+              />
+            </Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Position">
+              <input
+                required
+                value={form.poste}
+                onChange={(e) => setForm((f) => ({ ...f, poste: e.target.value }))}
+                className={inputClass}
+                placeholder="Product Manager"
+              />
+            </Field>
+            <Field label="Joining date">
+              <input
+                required
+                type="date"
+                value={form.dateEmbauche}
+                onChange={(e) => setForm((f) => ({ ...f, dateEmbauche: e.target.value }))}
+                className={inputClass}
+              />
+            </Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Status">
+              <select
+                value={form.statut}
+                onChange={(e) => setForm((f) => ({ ...f, statut: e.target.value as EmployeStatut }))}
+                className={inputClass}
+              >
+                {STATUTS.map((s) => (
+                  <option key={s} value={s}>
+                    {s === 'ACTIF' ? 'Active' : s === 'CONGE' ? 'On Leave' : 'Inactive'}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="System access (account)">
+              <select
+                value={form.userId ?? ''}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, userId: e.target.value ? e.target.value : null }))
+                }
+                className={inputClass}
+              >
+                <option value="">Disabled — no account</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.displayName} (@{u.username})
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
@@ -176,20 +207,26 @@ export function EmployeFormDialog({ open, mode, initial, onClose, onSubmit }: Pr
               className="inline-flex h-9 items-center rounded-md border border-input bg-background px-4 text-sm hover:bg-accent"
               disabled={saving}
             >
-              Annuler
+              Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
               className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
-              {saving ? 'Enregistrement…' : mode === 'create' ? 'Créer' : 'Enregistrer'}
+              {saving ? 'Saving…' : mode === 'create' ? 'Add Employee' : 'Save'}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
+}
+
+function normalizeStatut(statut: string): EmployeStatut {
+  if (statut === 'CONGE') return 'CONGE';
+  if (statut === 'INACTIF' || statut === 'ONBOARDING' || statut === 'SORTIE') return 'INACTIF';
+  return 'ACTIF';
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {

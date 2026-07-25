@@ -38,9 +38,13 @@ public class TaskUseCase {
     }
 
     public List<Task> listMine(String userId) {
-        String employeId = employeDirectoryPort.findEmployeIdByUserId(userId)
-                .orElseThrow(NoLinkedEmployeException::new);
+        String employeId = resolveEmployeId(userId);
         return taskRepository.findByAssigneeEmployeId(employeId);
+    }
+
+    public String resolveEmployeId(String userId) {
+        return employeDirectoryPort.findEmployeIdByUserId(userId)
+                .orElseThrow(NoLinkedEmployeException::new);
     }
 
     public Task get(TaskId id) {
@@ -64,6 +68,8 @@ public class TaskUseCase {
                 TaskStatus.TODO,
                 assigneeEmployeId,
                 createdByUserId,
+                false,
+                false,
                 Instant.now(),
                 Instant.now()
         );
@@ -71,14 +77,13 @@ public class TaskUseCase {
     }
 
     public Task update(TaskId id, String title, String description, String assigneeEmployeId) {
-        Task existing = get(id);
+        Task existing = requireActive(get(id));
         return taskRepository.save(existing.withDetails(title, description, assigneeEmployeId));
     }
 
     public Task updateMyStatus(TaskId id, TaskStatus status, String userId) {
-        Task existing = get(id);
-        String employeId = employeDirectoryPort.findEmployeIdByUserId(userId)
-                .orElseThrow(NoLinkedEmployeException::new);
+        Task existing = requireActive(get(id));
+        String employeId = resolveEmployeId(userId);
         if (!employeId.equals(existing.getAssigneeEmployeId())) {
             throw new TaskNotOwnedException(id);
         }
@@ -86,13 +91,41 @@ public class TaskUseCase {
     }
 
     public Task updateStatusAsManager(TaskId id, TaskStatus status) {
-        Task existing = get(id);
+        Task existing = requireActive(get(id));
         return taskRepository.save(existing.withStatus(status));
+    }
+
+    public Task setFavorite(TaskId id, boolean favorite, String userId, boolean manager) {
+        Task existing = requireActive(get(id));
+        if (!manager) {
+            String employeId = resolveEmployeId(userId);
+            if (!employeId.equals(existing.getAssigneeEmployeId())) {
+                throw new TaskNotOwnedException(id);
+            }
+        }
+        return taskRepository.save(existing.withFavorite(favorite));
+    }
+
+    public Task softDelete(TaskId id) {
+        Task existing = get(id);
+        return taskRepository.save(existing.withDeleted(true));
+    }
+
+    public Task restore(TaskId id) {
+        Task existing = get(id);
+        return taskRepository.save(existing.withDeleted(false));
     }
 
     public void delete(TaskId id) {
         get(id);
         taskRepository.delete(id);
+    }
+
+    private Task requireActive(Task task) {
+        if (task.isDeleted()) {
+            throw new TaskNotFoundException(task.getId());
+        }
+        return task;
     }
 
     private void ensureProject(ProjectId projectId) {

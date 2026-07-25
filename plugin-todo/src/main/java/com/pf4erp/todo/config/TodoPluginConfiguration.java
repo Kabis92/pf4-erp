@@ -57,8 +57,12 @@ public class TodoPluginConfiguration {
     }
 
     @Bean
-    public TaskController taskController(TaskUseCase taskUseCase, EmployeDirectoryPort employeDirectoryPort) {
-        return new TaskController(taskUseCase, employeDirectoryPort);
+    public TaskController taskController(
+            TaskUseCase taskUseCase,
+            EmployeDirectoryPort employeDirectoryPort,
+            ProjectRepository projectRepository
+    ) {
+        return new TaskController(taskUseCase, employeDirectoryPort, projectRepository);
     }
 
     @Bean

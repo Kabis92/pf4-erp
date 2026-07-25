@@ -45,7 +45,7 @@ export function activate(api: PluginRuntimeApi = window.__PF4ERP__!) {
   // Menu simple (sans sous-menus) — visible si rh.employe.read
   api.registerMenu({
     id: 'rh.employes',
-    label: 'Employés',
+    label: 'Employees',
     path: '/rh/employes',
     icon: 'users',
     permission: 'rh.employe.read',

@@ -51,14 +51,14 @@ export function activate(api: PluginRuntimeApi = window.__PF4ERP__!) {
     children: [
       {
         id: 'todo.mine',
-        label: 'Mes tâches',
+        label: 'List',
         path: '/todo/mine',
         icon: 'check-square',
         permission: 'todo.task.self',
       },
       {
         id: 'todo.manage',
-        label: 'Gestion',
+        label: 'Projects',
         path: '/todo/manage',
         icon: 'list-todo',
         permission: 'todo.project.manage',

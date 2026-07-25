@@ -11,11 +11,14 @@ export type Project = {
 export type Task = {
   id: string;
   projectId: string;
+  projectName?: string;
   title: string;
   description: string;
   status: TaskStatus;
   assigneeEmployeId: string | null;
   assigneeName: string | null;
+  favorite: boolean;
+  deleted: boolean;
   createdByUserId: string;
   createdAt: string;
   updatedAt: string;
@@ -26,13 +29,21 @@ export type EmployeOption = {
   nom: string;
 };
 
-/** Assignables pour Gestion — via facade Todo (pas /api/rh). */
 export function listEmployesForAssign() {
   return request<EmployeOption[]>('/api/todo/assignees');
 }
 
 function getApi() {
   return window.__PF4ERP__;
+}
+
+function hasPermission(code: string) {
+  const perms = getApi()?.getPermissions?.() ?? [];
+  return perms.includes(code);
+}
+
+export function canManageTodo() {
+  return hasPermission('todo.project.manage');
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -75,6 +86,13 @@ export function updateMyTaskStatus(id: string, status: TaskStatus) {
   return request<Task>(`/api/todo/tasks/mine/${id}/status`, {
     method: 'PUT',
     body: JSON.stringify({ status }),
+  });
+}
+
+export function setMyFavorite(id: string, favorite: boolean) {
+  return request<Task>(`/api/todo/tasks/mine/${id}/favorite`, {
+    method: 'PUT',
+    body: JSON.stringify({ favorite }),
   });
 }
 
@@ -127,6 +145,21 @@ export function updateTaskStatus(id: string, status: TaskStatus) {
   });
 }
 
+export function setTaskFavorite(id: string, favorite: boolean) {
+  return request<Task>(`/api/todo/tasks/${id}/favorite`, {
+    method: 'PUT',
+    body: JSON.stringify({ favorite }),
+  });
+}
+
+export function trashTask(id: string) {
+  return request<Task>(`/api/todo/tasks/${id}/trash`, { method: 'PUT' });
+}
+
+export function restoreTask(id: string) {
+  return request<Task>(`/api/todo/tasks/${id}/restore`, { method: 'PUT' });
+}
+
 export function deleteTask(id: string) {
   return request<void>(`/api/todo/tasks/${id}`, { method: 'DELETE' });
 }
@@ -142,4 +175,37 @@ export function statusLabel(status: TaskStatus) {
     default:
       return status;
   }
+}
+
+/** Couleurs de tags projet (pas de thème violet global — accents locaux). */
+export function projectTagClass(name: string) {
+  const palette = [
+    'bg-rose-500/15 text-rose-700 dark:text-rose-300',
+    'bg-orange-500/15 text-orange-700 dark:text-orange-300',
+    'bg-teal-500/15 text-teal-700 dark:text-teal-300',
+    'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    'bg-sky-500/15 text-sky-700 dark:text-sky-300',
+    'bg-amber-500/15 text-amber-800 dark:text-amber-300',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash + name.charCodeAt(i) * (i + 1)) % palette.length;
+  }
+  return palette[hash];
+}
+
+export function projectBorderClass(name: string) {
+  const palette = [
+    'border-l-rose-400',
+    'border-l-orange-400',
+    'border-l-teal-400',
+    'border-l-emerald-400',
+    'border-l-sky-400',
+    'border-l-amber-400',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash + name.charCodeAt(i) * (i + 1)) % palette.length;
+  }
+  return palette[hash];
 }

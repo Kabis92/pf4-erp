@@ -63,6 +63,8 @@ public class MongoTaskRepository implements TaskRepository {
                 TaskStatus.from(doc.getStatus()),
                 doc.getAssigneeEmployeId(),
                 doc.getCreatedByUserId(),
+                Boolean.TRUE.equals(doc.getFavorite()),
+                Boolean.TRUE.equals(doc.getDeleted()),
                 doc.getCreatedAt(),
                 doc.getUpdatedAt()
         );
@@ -77,6 +79,8 @@ public class MongoTaskRepository implements TaskRepository {
         doc.setStatus(task.getStatus().name());
         doc.setAssigneeEmployeId(task.getAssigneeEmployeId());
         doc.setCreatedByUserId(task.getCreatedByUserId());
+        doc.setFavorite(task.isFavorite());
+        doc.setDeleted(task.isDeleted());
         doc.setCreatedAt(task.getCreatedAt());
         doc.setUpdatedAt(task.getUpdatedAt());
         return doc;
