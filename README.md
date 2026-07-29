@@ -36,6 +36,24 @@ docker compose up -d
 # Mongo Express UI : http://localhost:8081
 ```
 
+## Déploiement Docker (simulation ERP)
+
+Stack complète (Mongo + Core en mode `deployment` + shell UI nginx) dans `deploy/` :
+
+```bash
+cp deploy/.env.example deploy/.env   # optionnel
+./deploy/scripts/up.sh               # build + start
+# UI      http://localhost:3000
+# Core    http://localhost:8080
+# Swagger http://localhost:3000/swagger-ui.html
+
+./deploy/scripts/logs.sh             # logs core + ui
+./deploy/scripts/down.sh             # stop
+./deploy/scripts/down.sh -v          # stop + volumes
+```
+
+Mongo Express (optionnel) : `docker compose -f deploy/docker-compose.yml --project-directory . --profile tools up -d mongo-express`
+
 ## Build & run (MVP)
 
 ### 1. UI du plugin RH
@@ -111,6 +129,7 @@ pf4-erp/
 ├── plugin-todo/       # Module Todo (consomme plugin-rh-api)
 ├── erp-ui/            # Shell React shadcn (PluginLoader, ExtensionSlot)
 ├── plugins/           # JARs runtime (deployment)
+├── deploy/            # Docker Compose + Dockerfiles + scripts (simu prod)
 └── docs/
 ```
 

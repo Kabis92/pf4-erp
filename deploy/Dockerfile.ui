@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+
+FROM node:20-alpine AS build
+# Layout identique au repo : erp-ui/src/index.css référence ../../plugin-*/ui/src
+WORKDIR /src/erp-ui
+
+COPY erp-ui/package.json erp-ui/package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci
+
+# @source Tailwind : sans ces sources, les classes des UI plugins ne sont pas générées
+COPY plugin-rh/ui/src /src/plugin-rh/ui/src
+COPY plugin-todo/ui/src /src/plugin-todo/ui/src
+
+COPY erp-ui/ ./
+RUN npm run build
+
+FROM nginx:1.27-alpine
+COPY deploy/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /src/erp-ui/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=5 \
+  CMD wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1

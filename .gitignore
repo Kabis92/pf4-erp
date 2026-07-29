@@ -11,5 +11,6 @@ dist/
 *.log
 .env
 .env.local
+deploy/.env
 erp-ui/dist/
 plugin-rh/ui/node_modules/

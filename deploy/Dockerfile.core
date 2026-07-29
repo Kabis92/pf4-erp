@@ -1,0 +1,68 @@
+# syntax=docker/dockerfile:1
+
+# --- Build UI des plugins (IIFE → resources/ui) ---
+FROM node:20-alpine AS plugin-ui
+WORKDIR /src
+
+COPY plugin-rh/ui/package.json plugin-rh/ui/package-lock.json ./plugin-rh/ui/
+COPY plugin-todo/ui/package.json plugin-todo/ui/package-lock.json ./plugin-todo/ui/
+
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefix plugin-rh/ui \
+ && npm ci --prefix plugin-todo/ui
+
+COPY plugin-rh/ui ./plugin-rh/ui
+COPY plugin-todo/ui ./plugin-todo/ui
+
+RUN mkdir -p plugin-rh/src/main/resources plugin-todo/src/main/resources \
+ && npm run build --prefix plugin-rh/ui \
+ && npm run build --prefix plugin-todo/ui
+
+# --- Build Maven (core + plugins JAR) ---
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /build
+
+COPY pom.xml ./
+COPY erp-plugin-api ./erp-plugin-api
+COPY plugin-rh-api ./plugin-rh-api
+COPY erp-core ./erp-core
+COPY plugin-rh ./plugin-rh
+COPY plugin-todo ./plugin-todo
+COPY --from=plugin-ui /src/plugin-rh/src/main/resources/ui ./plugin-rh/src/main/resources/ui
+COPY --from=plugin-ui /src/plugin-todo/src/main/resources/ui ./plugin-todo/src/main/resources/ui
+
+# Cache /root/.m2 entre builds : pas de go-offline (résolution des modules frères = très lent)
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -ntp -DskipTests package \
+ && mkdir -p /out/plugins \
+ && cp erp-core/target/erp-core-*.jar /out/erp-core.jar \
+ && cp plugins/plugin-rh.jar plugins/plugin-todo.jar /out/plugins/
+
+# --- Runtime ---
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+RUN apk add --no-cache wget su-exec \
+ && addgroup -S pf4erp && adduser -S pf4erp -G pf4erp \
+ && mkdir -p /app/plugins /opt/plugins-default
+
+COPY --from=build /out/erp-core.jar /app/erp-core.jar
+COPY --from=build /out/plugins /opt/plugins-default
+COPY deploy/docker/core-entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh \
+ && chown -R pf4erp:pf4erp /app /opt/plugins-default
+
+ENV PLUGIN_RUNTIME_MODE=deployment \
+    PLUGINS_DIR=/app/plugins \
+    DEFAULT_PLUGINS=/opt/plugins-default \
+    MONGODB_URI=mongodb://mongo:27017/pf4erp \
+    JAVA_OPTS="-XX:MaxRAMPercentage=75.0"
+
+EXPOSE 8080
+# Entrypoint seed en root puis drop vers pf4erp via su-exec
+USER root
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=50s --retries=8 \
+  CMD wget -qO- http://127.0.0.1:8080/swagger-ui.html >/dev/null 2>&1 || exit 1
+
+ENTRYPOINT ["/app/entrypoint.sh"]

@@ -1,0 +1,17 @@
+.git
+.idea
+**/.DS_Store
+**/node_modules
+**/target
+**/dist
+**/*.log
+**/.env
+**/.env.local
+erp-ui/dist
+plugin-rh/ui/node_modules
+plugin-todo/ui/node_modules
+plugins/*.jar
+agent-transcripts
+*.md
+!README.md
+docs
