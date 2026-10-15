@@ -9,6 +9,7 @@ plugins/*.jar
 node_modules/
 dist/
 *.log
+*.tsbuildinfo
 .env
 .env.local
 deploy/.env

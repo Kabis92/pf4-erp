@@ -77,7 +77,7 @@ Décisions figées pour pf4-erp. Complète [CORE_ARCHITECTURE.md](CORE_ARCHITECT
 
 **Statut :** Accepté
 
-**Contexte :** Le projet `/Users/kabis/Documents/yidgri/erp-ang` fournit déjà un chrome ERP (sidebar 260px, breadcrumb, footer, tokens OKLCH neutral, page liste Members) basé sur ZardUI (équivalent Angular de shadcn) + Tailwind + Lucide.
+**Contexte :** Un chrome ERP de référence (projet Angular `erp-ang`, hors de ce dépôt) fournit déjà une sidebar de 260px, un breadcrumb, un footer, des tokens OKLCH neutral et une page liste, basés sur ZardUI (équivalent Angular de shadcn) + Tailwind + Lucide.
 
 **Décision :** Porter ce design dans `erp-ui` avec **shadcn/ui** + Tailwind + **lucide-react**. Copier les tokens (`tailwind.css` erp-ang) et le layout ; ajouter un écran Login JWT absent d’erp-ang. Ne pas dépendre du repo Angular au runtime.
 

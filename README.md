@@ -1,147 +1,138 @@
 # pf4-erp
 
-ERP modulaire basé sur **PF4J** (plugins Java) et un shell **React** (micro-frontends). Chaque module métier est un plugin hybride : logique Java + UI compilée livrée dans le même JAR.
+ERP modulaire : un core Spring Boot charge des plugins métier Java (PF4J) et leur interface React, sans recompiler le socle.
 
-## Vision
+Projet personnel de démonstration. L’objectif est de montrer une architecture extensible — hexagonale, plugins isolés, micro-frontends, droits d’accès — sur un périmètre volontairement réduit (RH et tâches).
 
-Construire un ERP extensible où :
+## Ce que le dépôt montre
 
-- le **Core** orchestre le cycle de vie des plugins, l’auth, et le shell UI ;
-- chaque **plugin** encapsule un domaine métier (ex. RH) derrière une architecture hexagonale ;
-- le front charge dynamiquement les contributions UI des plugins via des *slots* (modèle proche de [Halo](https://docs.halo.run/developer-guide/plugin/introduction)) ;
-- la persistance est abstraite par des **ports** : MongoDB pour le MVP, PostgreSQL possible plus tard sans toucher au domaine.
+- **Architecture hexagonale** : le domaine ne dépend ni de Spring, ni de MongoDB, ni de HTTP. Les use cases parlent à des ports.
+- **Plugins hybrides** : un JAR embarque le code Java, le manifeste `plugin.yaml` et le bundle UI (`main.js` / `style.css`).
+- **Micro-frontends** : le shell React découvre les plugins actifs et monte leurs écrans dans des slots (`menu.main`, `dashboard.widgets`).
+- **Contrats entre modules** : Todo consomme l’API publique de RH (`EmployeDirectory`) et réagit à ses événements, sans dépendre de son implémentation.
+- **RBAC** : chaque plugin déclare ses permissions. Le core les expose aux rôles et les porte dans le JWT.
+- **Deux modes d’exécution** : développement (classes du plugin) et déploiement (JAR dans `plugins/`), plus une stack Docker.
 
 ## Stack
 
 | Couche | Choix |
 |--------|--------|
-| Backend | Java 21, Spring Boot 3.x, architecture hexagonale (ports & adapters) |
-| Contrats plugins | `erp-plugin-api` (PF4J / pf4j-spring) |
-| Persistance MVP | MongoDB via adapter secondaire |
-| Persistance future | PostgreSQL / JPA derrière les mêmes ports |
-| Frontend | React + TypeScript + Vite |
-| Design system | **shadcn/ui** + Tailwind + Lucide (port du design erp-ang) |
-| UI plugins | IIFE dans `resources/ui/`, React externalisé (globals shell) |
+| Backend | Java 21, Spring Boot 3.4, Maven multi-modules |
+| Plugins | PF4J 3.12, pf4j-spring |
+| Architecture | Hexagonale (ports & adapters) |
+| Auth | JWT (jjwt) + RBAC |
+| Persistance | MongoDB (adapter). PostgreSQL reste possible derrière les mêmes ports |
+| Frontend | React, TypeScript, Vite, Tailwind, shadcn/ui |
+| Livraison | Docker Compose (core, UI nginx, MongoDB) |
 
-## Prérequis
+## Architecture
 
-- JDK 21+
-- Maven 3.9+
-- Node.js 20+ et npm
-- MongoDB 7+ (local ou Docker)
+```mermaid
+flowchart LR
+  subgraph ui [Shell React]
+    Shell[erp-ui]
+    Slots[Extension slots]
+  end
 
-```bash
-docker compose up -d
-# Mongo URI : mongodb://localhost:27017/pf4erp
-# Mongo Express UI : http://localhost:8081
+  subgraph core [Core Spring Boot]
+    Auth[JWT / RBAC]
+    PF4J[PF4J runtime]
+    Hub[Shared events]
+  end
+
+  subgraph plugins [Plugins]
+    RH[plugin-rh]
+    Todo[plugin-todo]
+  end
+
+  Shell --> Auth
+  Shell --> Slots
+  Slots --> RH
+  Slots --> Todo
+  PF4J --> RH
+  PF4J --> Todo
+  Todo -->|contrat public| RH
+  RH --> Hub
+  Hub --> Todo
+  RH --> Mongo[(MongoDB)]
+  Todo --> Mongo
+  Auth --> Mongo
 ```
-
-## Déploiement Docker (simulation ERP)
-
-Stack complète (Mongo + Core en mode `deployment` + shell UI nginx) dans `deploy/` :
-
-```bash
-cp deploy/.env.example deploy/.env   # optionnel
-./deploy/scripts/up.sh               # build + start
-# UI      http://localhost:3000
-# Core    http://localhost:8080
-# Swagger http://localhost:3000/swagger-ui.html
-
-./deploy/scripts/logs.sh             # logs core + ui
-./deploy/scripts/down.sh             # stop
-./deploy/scripts/down.sh -v          # stop + volumes
-```
-
-Mongo Express (optionnel) : `docker compose -f deploy/docker-compose.yml --project-directory . --profile tools up -d mongo-express`
-
-## Build & run (MVP)
-
-### 1. UI du plugin RH
-
-```bash
-cd plugin-rh/ui
-npm install
-npm run build
-# → plugin-rh/src/main/resources/ui/{main.js,style.css}
-```
-
-### 2. Backend (API + Core + plugin)
-
-```bash
-# à la racine
-mvn -q clean package -DskipTests
-# copie plugin-rh.jar → plugins/
-```
-
-### 3. Shell React
-
-```bash
-cd erp-ui
-npm install
-npm run dev
-# http://localhost:5173 (proxy /api → :8080)
-```
-
-### 4. Démarrer le Core
-
-```bash
-# mode development : charge plugin-rh/target/classes
-java -jar erp-core/target/erp-core-0.1.0-SNAPSHOT.jar
-
-# ou
-mvn -pl erp-core spring-boot:run
-```
-
-Variables utiles :
-
-| Variable | Défaut | Rôle |
-|----------|--------|------|
-| `MONGODB_URI` | `mongodb://localhost:27017/pf4erp` | Mongo |
-| `JWT_SECRET` | secret démo (≥32 car.) | Signature JWT |
-| `PLUGIN_RUNTIME_MODE` | `development` | `development` \| `deployment` |
-| `PLUGINS_DIR` | `./plugins` | JARs en mode deployment |
-| `PLUGIN_RH_PATH` | `./plugin-rh/target/classes` | Chemin fixe en development |
-
-### Compte démo (seed Mongo)
-
-- `admin` / `admin` — rôle **ADMIN** (toutes les permissions actives du catalogue)
-- `user` / `user` — rôle **USER** (`rh.employe.read`, `todo.task.self`) ; seed RH lie ce compte à un employé
-
-Admin : menus **Utilisateurs**, **Rôles & accès**, **Plugins**, **Gestion Todo**.  
-Rôle seed **TASK_MANAGER** : manage projets/tâches + lecture employés.  
-Les plugins déclarent leurs permissions dans `plugin.yaml` ; elles sont assignables aux rôles.  
-Swagger : `/swagger-ui.html` — groupes `core` / `all` + **un groupe par plugin**.
-
-### Critères de succès
-
-- `GET /api/plugins` liste le plugin `rh`
-- `GET /api/rh/employes` (Bearer JWT) répond
-- UI Vite : login → dashboard (widget compteur) → menu Employés
-
-## Modules
 
 ```
 pf4-erp/
-├── erp-plugin-api/    # Contrats Core (ErpModuleExtension, SharedEvent, ExtensionGetter)
-├── plugin-rh-api/     # Contrats publics RH (EmployeDirectory, events)
-├── erp-core/          # Shell Spring + PF4J + auth JWT + RBAC + SharedEventHub
-├── plugin-rh/         # Module RH (employés + lien userId)
-├── plugin-todo/       # Module Todo (consomme plugin-rh-api)
-├── erp-ui/            # Shell React shadcn (PluginLoader, ExtensionSlot)
-├── plugins/           # JARs runtime (deployment)
-├── deploy/            # Docker Compose + Dockerfiles + scripts (simu prod)
-└── docs/
+├── erp-plugin-api/    # Contrats du core (extensions, événements)
+├── plugin-rh-api/     # Contrats publics RH
+├── erp-core/          # Shell Spring, PF4J, auth, RBAC
+├── plugin-rh/         # Employés + UI
+├── plugin-todo/       # Projets et tâches, branché sur RH
+├── erp-ui/            # Shell React
+├── plugins/           # JARs en mode déploiement
+├── deploy/            # Docker Compose, Dockerfiles, scripts
+└── docs/              # Architecture et décisions
 ```
+
+## Démarrage rapide
+
+Prérequis : JDK 21, Maven 3.9, Node.js 20, Docker.
+
+```bash
+docker compose up -d
+# MongoDB  mongodb://localhost:27017/pf4erp
+
+cd plugin-rh/ui && npm install && npm run build && cd ../..
+cd plugin-todo/ui && npm install && npm run build && cd ../..
+
+mvn -q clean package -DskipTests
+
+cd erp-ui && npm install && npm run dev
+# UI de dev : http://localhost:5173  (proxy /api vers :8080)
+```
+
+Dans un autre terminal :
+
+```bash
+mvn -pl erp-core spring-boot:run
+```
+
+Stack complète (Mongo + core en mode déploiement + UI nginx) :
+
+```bash
+cp deploy/.env.example deploy/.env   # optionnel
+./deploy/scripts/up.sh
+# UI       http://localhost:3000
+# Core     http://localhost:8080
+# Swagger  http://localhost:3000/swagger-ui.html
+```
+
+| Variable | Défaut | Rôle |
+|----------|--------|------|
+| `MONGODB_URI` | `mongodb://localhost:27017/pf4erp` | Base Mongo |
+| `JWT_SECRET` | secret de démo, local uniquement | Signature JWT. À remplacer hors machine de dev |
+| `PLUGIN_RUNTIME_MODE` | `development` | `development` ou `deployment` |
+| `PLUGINS_DIR` | `./plugins` | JARs en mode déploiement |
+
+Comptes seedés au premier démarrage :
+
+| Utilisateur | Mot de passe | Rôle |
+|-------------|--------------|------|
+| `admin` | `admin` | ADMIN — toutes les permissions |
+| `user` | `user` | USER — lecture employés et ses propres tâches |
+
+Le seed crée aussi un rôle `TASK_MANAGER` (gestion des projets et des tâches, lecture des employés).
 
 ## Documentation
 
-| Document | Rôle |
-|----------|------|
-| [docs/CORE_ARCHITECTURE.md](docs/CORE_ARCHITECTURE.md) | Référence d’architecture |
-| [docs/PLUGIN_INTERACTION.md](docs/PLUGIN_INTERACTION.md) | Communication inter-plugins (API, extensions, events) |
-| [docs/PROMPT_MVP.md](docs/PROMPT_MVP.md) | Prompt maître MVP |
-| [docs/DECISIONS.md](docs/DECISIONS.md) | ADR |
+| Document | Contenu |
+|----------|---------|
+| [docs/CORE_ARCHITECTURE.md](docs/CORE_ARCHITECTURE.md) | Architecture du core |
+| [docs/PLUGIN_INTERACTION.md](docs/PLUGIN_INTERACTION.md) | Contrats, extensions et événements entre plugins |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | Décisions d’architecture |
 
-## Statut
+## Auteur
 
-MVP code en place : Core + plugins RH / Todo + shell React + RBAC.
+Ismael KABORE — projet personnel, publié pour montrer la façon de structurer un produit modulaire.
+
+## Licence
+
+[MIT](LICENSE)

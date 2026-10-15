@@ -1,6 +1,6 @@
-# Prompt MVP — pf4-erp
+# Spécification MVP — pf4-erp
 
-Prompt maître à **copier-coller** dans Cursor pour générer le MVP exécutable. Aligné avec [CORE_ARCHITECTURE.md](CORE_ARCHITECTURE.md) et [DECISIONS.md](DECISIONS.md).
+Cahier des charges du premier incrément livrable. Aligné avec [CORE_ARCHITECTURE.md](CORE_ARCHITECTURE.md) et [DECISIONS.md](DECISIONS.md).
 
 ---
 
@@ -37,7 +37,7 @@ Interdit au MVP : Angular runtime, Axelor, JSON Forms, moteur XML, schéma type 
 Porter le look & IA du projet Angular erp-ang en React — ne pas intégrer Angular.
 
 Références locales (lecture seule, hors monorepo) :
-- Tokens : /Users/kabis/Documents/yidgri/erp-ang/src/tailwind.css
+- Tokens : projet de référence `erp-ang` (hors dépôt), fichier `src/tailwind.css`
   (OKLCH, baseColor neutral, --radius 0.625rem, variables sidebar-*)
 - Layout : erp-ang/src/app/layouts/{main-layout,content-layout,sidebar,header,footer}
 - Menu : erp-ang/src/app/layouts/sidebar/sidebar-menu.config.ts

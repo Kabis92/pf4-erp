@@ -236,7 +236,7 @@ Le look & IA du shell viennent du projet Angular **erp-ang** (hors monorepo), po
 
 Références de lecture (chemin local développeur) :
 
-- tokens : `erp-ang/src/tailwind.css`
+- tokens : projet de référence `erp-ang` (hors dépôt), `src/tailwind.css`
 - layout : `erp-ang/src/app/layouts/{main-layout,content-layout,sidebar,header,footer}`
 - menu : `erp-ang/src/app/layouts/sidebar/sidebar-menu.config.ts`
 - liste : `erp-ang/src/app/features/members/pages/member-list`
